@@ -1,6 +1,7 @@
 const el = id => document.getElementById(id);
 const sheets = window.lessonSheets;
 let current = 0, recorder, stream, preview, busy = false, playbackTimer, stoppedAt;
+let openingRecording, client, openingLoad = 0;
 const status = (message, visible = false) => {
   el('status').textContent = message;
   el('status').classList.toggle('quiet', !visible);
@@ -30,8 +31,9 @@ function clearPlayer() {
   if (preview) URL.revokeObjectURL(preview);
   preview = null;
 }
-async function playRecording() {
-  if (!preview) return;
+async function playRecording(source = preview) {
+  if (!source) return;
+  if (el('player').src !== source) el('player').src = source;
   el('player').currentTime = 0;
   try {
     await el('player').play();
@@ -50,7 +52,7 @@ window.selectPage = index => {
     if (i === index) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   });
   alignRecorder();
-  playRecording();
+  playRecording(openingRecording || preview);
 };
 el('record').onclick = async () => {
   if (recorder?.state === 'recording') {
@@ -96,7 +98,7 @@ el('record').onclick = async () => {
     showPage(true); status(error.message, true);
   } finally { busy = false; controls(); }
 };
-el('replay').onclick = playRecording;
+el('replay').onclick = () => playRecording(el('player').src);
 el('player').addEventListener('error', () => status('This audio could not play. Try recording a new take.', true));
 window.addEventListener('pagehide', () => {
   clearTimeout(playbackTimer);
@@ -104,3 +106,42 @@ window.addEventListener('pagehide', () => {
 });
 window.selectPage(0);
 controls();
+
+// Keep the saved opening/example recording separate from temporary practice takes.
+async function loadOpeningRecording(session) {
+  const ticket = ++openingLoad;
+  openingRecording = null;
+  el('opening-login').hidden = Boolean(session);
+  if (!session) return;
+  try {
+    const { data, error } = await client.from('spanish_recordings')
+      .select('object_path').eq('user_id', session.user.id)
+      .eq('lesson_id', 'preterite-v1').eq('page_key', 'all-pages').maybeSingle();
+    if (error) throw error;
+    if (!data || ticket !== openingLoad) return;
+    const signed = await client.storage.from('spanish-page-recordings').createSignedUrl(data.object_path, 3600);
+    if (signed.error) throw signed.error;
+    if (ticket !== openingLoad) return;
+    openingRecording = signed.data.signedUrl;
+    if (!busy && recorder?.state !== 'recording' && !preview) playRecording(openingRecording);
+  } catch (error) {
+    status(`Could not load opening recording: ${error.message}`, true);
+  }
+}
+if (window.supabase && window.SPANISH_CONFIG?.url) {
+  client = window.supabase.createClient(window.SPANISH_CONFIG.url, window.SPANISH_CONFIG.publishableKey);
+  client.auth.onAuthStateChange((event, session) => {
+    if (['INITIAL_SESSION', 'SIGNED_IN', 'SIGNED_OUT'].includes(event)) {
+      setTimeout(() => loadOpeningRecording(session), 0);
+    }
+  });
+}
+el('opening-login-form').onsubmit = async event => {
+  event.preventDefault();
+  if (!client) return;
+  const { error } = await client.auth.signInWithPassword({
+    email: el('email').value.trim(), password: el('password').value
+  });
+  if (error) status(error.message, true);
+  else el('password').value = '';
+};

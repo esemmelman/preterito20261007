@@ -30,19 +30,19 @@
     .account button { font-size: 22px; margin: 4px; }
     input { font: inherit; padding: 8px; max-width: 100%; }
     label { display: inline-block; margin: 8px; }
-    .center-frame { display: grid; grid-template-columns: minmax(0, 7.5in) max-content; gap: 64px; justify-content: space-between; align-items: start; padding-right: 16px; }
+    .center-frame { display: grid; grid-template-columns: minmax(0, 7.5in) max-content; gap: 24px; justify-content: center; align-items: start; padding: 0 16px; }
     #pages { min-width: 0; position: relative; }
     @media screen {
       #pages.recording-blank::after { content: ''; position: absolute; inset: 0; background: white; z-index: 1; }
       #pages.recording-blank > .sheet { visibility: hidden !important; }
     }
-    .recording-side { margin-top: var(--recording-top, 100px); width: 160px; font-size: 20px; }
-    #record { font-size: 28px; width: 100%; }
+    .recording-side { margin-top: var(--recording-top, 100px); width: max-content; max-width: 230px; font-size: 20px; }
+    #record { font-size: var(--reading-size); font-weight: 700; width: 100%; }
     #record[aria-pressed="true"] { background: #a71919; color: white; }
     .recording-side button { margin-bottom: 12px; }
     #status { overflow-wrap: anywhere; }
     #status.quiet { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-    @media screen and (max-width: 650px) { .center-frame { gap: 12px; padding-right: 4px; } .recording-side { width: 76px; font-size: 16px; } #record { font-size: 20px; padding: 10px 4px; } }
+    @media screen and (max-width: 650px) { .center-frame { gap: 8px; padding: 0 4px; } .recording-side { max-width: 112px; font-size: 16px; } #record { padding: 10px 4px; } }
     @media screen and (max-width: 1100px) { :root { --reading-size: 42px; } .verb { font-size: var(--reading-size); } .sheet { width: 100%; } }
     @media screen and (max-width: 650px) { :root { --reading-size: 32px; } .layout { gap: 6px; grid-template-columns: 140px minmax(0, 1fr); } .page-nav { padding: 4px; } .page-nav button { padding: 8px 4px; } .sheet { padding: 12px; } .verb { font-size: var(--reading-size); } .forms { gap: 16px 8px; } h1 { margin-bottom: 32px; } }
     @page { size: letter; margin: .5in; }
@@ -71,7 +71,15 @@
   </style>
 </head>
 <body>
-  <div class="toolbar"><button onclick="window.print()">Print conjugations</button><p class="version" lang="en">Version 2.4</p></div>
+  <div class="toolbar"><button onclick="window.print()">Print conjugations</button><p class="version" lang="en">Version 2.5</p></div>
+  <details id="opening-login" class="account" lang="en" hidden>
+    <summary>Sign in to load your opening recording</summary>
+    <form id="opening-login-form">
+      <label>Email <input id="email" type="email" autocomplete="username" required></label>
+      <label>Password <input id="password" type="password" autocomplete="current-password" required></label>
+      <button type="submit">Sign in</button>
+    </form>
+  </details>
   <div class="layout">
     <nav id="page-nav" class="page-nav" aria-label="Pages" lang="en"></nav>
     <div class="center-frame">
@@ -169,6 +177,8 @@
     window.lessonSheets = sheets;
   })();
   </script>
-  <script src="app.js?v=2.4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js?v=2.5"></script>
 </body>
 </html>
