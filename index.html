@@ -7,10 +7,11 @@
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; background: #eee; color: #111; font-family: Arial, Helvetica, sans-serif; }
-    .toolbar { padding: 20px; text-align: center; font-size: 40pt; font-weight: 700; }
+    .toolbar { padding: 20px; text-align: center; font-size: 44pt; font-weight: 700; }
+    .version { margin: 12px 0 0; font-size: 16px; }
     button { padding: 12px 24px; font: inherit; cursor: pointer; }
     .sheet { background: white; width: 7.5in; min-height: 10in; margin: 20px auto; padding: .35in; }
-    .verb { padding: .15in 0; font-size: 40pt; font-weight: 700; }
+    .verb { padding: .15in 0; font-size: 44pt; font-weight: 700; }
     .verb + .verb { border-top: 2px solid #999; padding-top: .35in; }
     h1 { font-size: inherit; margin: 0 0 64px; line-height: 1.2; }
     .forms { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px 24px; font-size: inherit; line-height: 1.2; }
@@ -26,12 +27,12 @@
     @media screen and (max-width: 750px) {
       .sheet { width: calc(100% - 24px); min-height: 0; padding: 24px; }
       .verb { height: auto; padding-bottom: 36px; }
-      .verb, .toolbar { font-size: 38px; }
+      .verb, .toolbar { font-size: 42px; }
     }
   </style>
 </head>
 <body>
-  <div class="toolbar"><button onclick="window.print()">Print conjugations</button></div>
+  <div class="toolbar"><button onclick="window.print()">Print conjugations</button><p class="version" lang="en">Version 1.5</p></div>
   <main id="pages"></main>
   <script>
     // Rows pair singular and plural forms in conventional conjugation-table order.
