@@ -44,6 +44,7 @@
       body { background: white; }
       .toolbar, .page-nav, .recording-side, .account { display: none; }
       .center-frame { display: block; padding: 0; }
+      #pages { visibility: visible !important; }
       .layout { display: block; }
       .sheet[hidden] { display: block !important; }
       .page-number { font-size: 16pt; margin-bottom: 8px; }
@@ -64,16 +65,7 @@
   </style>
 </head>
 <body>
-  <div class="toolbar"><button onclick="window.print()">Print conjugations</button><p class="version" lang="en">Version 2.2</p></div>
-  <section class="account" lang="en">
-    <form id="login-form">
-      <span>Sign in to save and hear your recordings on any device.</span><br>
-      <label>Email <input id="email" type="email" autocomplete="username" required></label>
-      <label>Password <input id="password" type="password" autocomplete="current-password" minlength="8" required></label>
-      <button type="submit">Sign in</button><button type="button" id="signup">Create account</button>
-    </form>
-    <p id="signed-in" hidden></p><button id="signout" hidden>Sign out</button>
-  </section>
+  <div class="toolbar"><button onclick="window.print()">Print conjugations</button><p class="version" lang="en">Version 2.3</p></div>
   <div class="layout">
     <nav id="page-nav" class="page-nav" aria-label="Pages" lang="en"></nav>
     <div class="center-frame">
@@ -81,8 +73,7 @@
       <aside class="recording-side" lang="en" aria-label="Recording">
         <button id="record" disabled aria-pressed="false">Record</button>
         <button id="replay" hidden>Play</button>
-        <button id="retry" hidden>Retry save</button>
-        <p id="status" class="quiet" role="status" aria-live="polite">Connecting to recordings…</p>
+        <p id="status" class="quiet" role="status" aria-live="polite">Select Record to practice.</p>
       </aside>
       <audio id="player" hidden></audio>
     </div>
@@ -115,6 +106,8 @@
     const pages = document.getElementById('pages');
     const cards = [];
     for (const [infinitive, meaning, forms] of verbs) {
+        // Ustedes (second-person plural) uses the third-person plural conjugation.
+        forms[3] = forms[5];
         const card = document.createElement('article');
         card.className = 'verb';
         const heading = document.createElement('h1');
@@ -170,8 +163,6 @@
     window.lessonSheets = sheets;
   })();
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-  <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
