@@ -13,7 +13,7 @@
     .sheet { background: white; width: 7.5in; min-height: 10in; margin: 20px auto; padding: .2in; }
     .verb { padding: .15in 0; font-size: 44pt; font-weight: 700; }
     .verb + .verb { border-top: 2px solid #999; padding-top: .35in; }
-    h1 { font-size: inherit; margin: 0 0 64px; line-height: 1.2; overflow-wrap: anywhere; }
+    h1 { font-size: inherit; margin: 0 0 64px; line-height: 1.2; overflow-wrap: anywhere; text-align: center; }
     .forms { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px 24px; font-size: inherit; line-height: 1.2; }
     .forms > div { overflow-wrap: anywhere; }
     :root { --reading-size: 44pt; }
@@ -37,8 +37,10 @@
       #pages.recording-blank > .sheet { visibility: hidden !important; }
     }
     .recording-side { margin-top: var(--recording-top, 100px); width: max-content; max-width: 230px; font-size: 20px; }
-    #record { font-size: var(--reading-size); font-weight: 700; width: 100%; }
-    #record[aria-pressed="true"] { background: #a71919; color: white; }
+    #record { font-size: var(--reading-size); font-weight: 700; width: 100%; display: flex; align-items: center; justify-content: center; text-align: center; border: 2px solid #777; border-top-color: #fff; border-left-color: #fff; border-radius: 8px; background: linear-gradient(#fff, #d5d5d5); box-shadow: 0 5px 0 #888, 0 8px 12px #0003; }
+    #record[aria-pressed="true"] { background: linear-gradient(#c92e2e, #8d1111); color: white; }
+    #record:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 1px 0 #888, 0 3px 5px #0003; }
+    #record:focus-visible { outline: 3px solid #173d65; outline-offset: 6px; }
     .recording-side button { margin-bottom: 12px; }
     #status { overflow-wrap: anywhere; }
     #status.quiet { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
