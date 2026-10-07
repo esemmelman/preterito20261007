@@ -12,9 +12,9 @@
     .sheet { background: white; width: 7.5in; min-height: 10in; margin: 20px auto; padding: .35in; }
     .verb { padding: .15in 0; font-size: 38pt; font-weight: 700; }
     .verb + .verb { border-top: 2px solid #999; padding-top: .35in; }
-    h1 { font-size: inherit; margin: 0 0 8px; }
-    .meaning { font-size: inherit; margin: 0 0 24px; }
-    .forms { display: grid; grid-template-columns: 1fr; gap: 20px; font-size: inherit; line-height: 1.2; }
+    h1 { font-size: inherit; margin: 0 0 48px; line-height: 1.2; }
+    .forms { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px 24px; font-size: inherit; line-height: 1.2; }
+    .forms > div { overflow-wrap: anywhere; }
     @page { size: letter; margin: .5in; }
     @media print {
       body { background: white; }
@@ -65,19 +65,19 @@
         const card = document.createElement('article');
         card.className = 'verb';
         const heading = document.createElement('h1');
-        heading.textContent = infinitive;
-        const definition = document.createElement('p');
-        definition.className = 'meaning';
+        heading.append(document.createTextNode(infinitive + ' - '));
+        const definition = document.createElement('span');
         definition.lang = 'en';
         definition.textContent = meaning;
+        heading.append(definition);
         const grid = document.createElement('div');
         grid.className = 'forms';
-        for (const form of [forms[0], forms[2], forms[4], forms[1], forms[3], forms[5]]) {
+        for (const form of forms) {
           const cell = document.createElement('div');
           cell.textContent = form;
           grid.append(cell);
         }
-        card.append(heading, definition, grid);
+        card.append(heading, grid);
         sheet.append(card);
       }
       pages.append(sheet);
