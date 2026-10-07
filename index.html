@@ -10,7 +10,7 @@
     .toolbar { padding: 20px; text-align: center; font-size: 44pt; font-weight: 700; }
     .version { margin: 12px 0 0; font-size: 16px; }
     button { padding: 12px 24px; font: inherit; cursor: pointer; }
-    .sheet { background: white; width: 7.5in; min-height: 10in; margin: 20px auto; padding: .35in; }
+    .sheet { background: white; width: 7.5in; min-height: 10in; margin: 20px auto; padding: .2in; }
     .verb { padding: .15in 0; font-size: 44pt; font-weight: 700; }
     .verb + .verb { border-top: 2px solid #999; padding-top: .35in; }
     h1 { font-size: inherit; margin: 0 0 64px; line-height: 1.2; }
@@ -29,10 +29,13 @@
       .verb { height: auto; padding-bottom: 36px; }
       .verb, .toolbar { font-size: 42px; }
     }
+    .sheet.measure { position: absolute; left: -10000px; visibility: hidden; width: 7.5in; min-height: 0; height: auto; margin: 0; padding: .2in; }
+    .measure .verb { font-size: 44pt; padding: .15in 0; }
+    .measure .verb + .verb { padding-top: .35in; }
   </style>
 </head>
 <body>
-  <div class="toolbar"><button onclick="window.print()">Print conjugations</button><p class="version" lang="en">Version 1.5</p></div>
+  <div class="toolbar"><button onclick="window.print()">Print conjugations</button><p class="version" lang="en">Version 1.6</p></div>
   <main id="pages"></main>
   <script>
     // Rows pair singular and plural forms in conventional conjugation-table order.
@@ -59,10 +62,8 @@
       ['suceder', 'to happen', ['sucedí', 'sucedimos', 'sucediste', 'sucedisteis', 'sucedió', 'sucedieron']]
     ];
     const pages = document.getElementById('pages');
-    for (let i = 0; i < verbs.length; i += 1) {
-      const sheet = document.createElement('section');
-      sheet.className = 'sheet';
-      for (const [infinitive, meaning, forms] of verbs.slice(i, i + 1)) {
+    const cards = [];
+    for (const [infinitive, meaning, forms] of verbs) {
         const card = document.createElement('article');
         card.className = 'verb';
         const heading = document.createElement('h1');
@@ -79,10 +80,29 @@
           grid.append(cell);
         }
         card.append(heading, grid);
-        sheet.append(card);
+        cards.push(card);
+    }
+    // Measure at the actual print width and keep at most two verbs per sheet.
+    const measure = document.createElement('section');
+    measure.className = 'sheet measure';
+    measure.setAttribute('aria-hidden', 'true');
+    document.body.append(measure);
+    for (let i = 0; i < cards.length;) {
+      const sheet = document.createElement('section');
+      sheet.className = 'sheet';
+      measure.append(cards[i++]);
+      if (i < cards.length) {
+        measure.append(cards[i]);
+        if (measure.getBoundingClientRect().height <= 10 * 96 - 2) {
+          i++;
+        } else {
+          cards[i].remove();
+        }
       }
+      sheet.append(...measure.children);
       pages.append(sheet);
     }
+    measure.remove();
   </script>
 </body>
 </html>
