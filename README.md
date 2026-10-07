@@ -4,9 +4,9 @@ Open `index.html` to browse 14 numbered pages. The left Page buttons use the sam
 
 ## Recordings
 
-Serve the app over HTTPS (or localhost for development). Sign in or create a Supabase email/password account. Confirm your email if required. Select Record, allow microphone access, speak, then Stop. Preview the take and select Save recording, or Discard take. Navigation is held while recording or reviewing an unsaved take. A new saved take replaces the one recording used by every page.
+Serve the app over HTTPS (or localhost for development). Sign in or create a Supabase email/password account. Confirm your email if required. Use the Record button to the right of the page, aligned with the first infinitive. Allow microphone access and speak; the button changes to Stop. Select Stop to immediately play the recording and automatically save it. A new recording replaces the one used by every page. Navigation is held during recording and saving. If saving fails, Retry save keeps the take available.
 
-Recordings are private to your account. Sign in with the same account on any device to hear them. The browser chooses a supported recording format (WebM, MP4, or Ogg); playback across devices depends on browser codec support. Current Safari and Chromium browsers are recommended. Unsaved takes remain in memory only; save before closing the page.
+Recordings are private to your account. Sign in with the same account on any device to hear them. The browser chooses a supported recording format (WebM, MP4, or Ogg); playback across devices depends on browser codec support. Current Safari and Chromium browsers are recommended. If saving fails, the take remains in memory only; retry before closing the page.
 
 ## Supabase setup
 

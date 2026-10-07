@@ -13,7 +13,7 @@
     .sheet { background: white; width: 7.5in; min-height: 10in; margin: 20px auto; padding: .2in; }
     .verb { padding: .15in 0; font-size: 44pt; font-weight: 700; }
     .verb + .verb { border-top: 2px solid #999; padding-top: .35in; }
-    h1 { font-size: inherit; margin: 0 0 64px; line-height: 1.2; }
+    h1 { font-size: inherit; margin: 0 0 64px; line-height: 1.2; overflow-wrap: anywhere; }
     .forms { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px 24px; font-size: inherit; line-height: 1.2; }
     .forms > div { overflow-wrap: anywhere; }
     :root { --reading-size: 44pt; }
@@ -24,18 +24,26 @@
     .page-nav button[aria-current="page"] { background: #173d65; color: white; }
     .sheet { max-width: 100%; }
     .page-number { text-align: right; font-size: var(--reading-size); font-weight: 700; margin-bottom: 20px; }
-    .audio-tools, .account { font-size: 22px; padding: 16px; background: white; margin: 12px; }
-    .audio-tools button, .account button { font-size: 22px; margin: 4px; }
+    .account { font-size: 22px; padding: 16px; background: white; margin: 12px; }
+    .account button { font-size: 22px; margin: 4px; }
     input { font: inherit; padding: 8px; max-width: 100%; }
     label { display: inline-block; margin: 8px; }
-    audio { display: block; width: 100%; margin-top: 12px; }
-    #status { min-height: 1.4em; }
+    .center-frame { display: grid; grid-template-columns: minmax(0, 7.5in) max-content; gap: 16px; justify-content: center; align-items: start; padding-right: 16px; }
+    #pages { min-width: 0; }
+    .recording-side { margin-top: var(--recording-top, 100px); width: 160px; font-size: 20px; }
+    #record { font-size: 28px; width: 100%; }
+    #record[aria-pressed="true"] { background: #a71919; color: white; }
+    .recording-side button { margin-bottom: 12px; }
+    #status { overflow-wrap: anywhere; }
+    #status.quiet { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    @media screen and (max-width: 650px) { .center-frame { gap: 4px; padding-right: 4px; } .recording-side { width: 76px; font-size: 16px; } #record { font-size: 20px; padding: 10px 4px; } }
     @media screen and (max-width: 1100px) { :root { --reading-size: 42px; } .verb { font-size: var(--reading-size); } .sheet { width: 100%; } }
     @media screen and (max-width: 650px) { :root { --reading-size: 32px; } .layout { gap: 6px; grid-template-columns: 140px minmax(0, 1fr); } .page-nav { padding: 4px; } .page-nav button { padding: 8px 4px; } .sheet { padding: 12px; } .verb { font-size: var(--reading-size); } .forms { gap: 16px 8px; } h1 { margin-bottom: 32px; } }
     @page { size: letter; margin: .5in; }
     @media print {
       body { background: white; }
-      .toolbar, .page-nav, .audio-tools, .account { display: none; }
+      .toolbar, .page-nav, .recording-side, .account { display: none; }
+      .center-frame { display: block; padding: 0; }
       .layout { display: block; }
       .sheet[hidden] { display: block !important; }
       .page-number { font-size: 16pt; margin-bottom: 8px; }
@@ -56,7 +64,7 @@
   </style>
 </head>
 <body>
-  <div class="toolbar"><button onclick="window.print()">Print conjugations</button><p class="version" lang="en">Version 2.1</p></div>
+  <div class="toolbar"><button onclick="window.print()">Print conjugations</button><p class="version" lang="en">Version 2.2</p></div>
   <section class="account" lang="en">
     <form id="login-form">
       <span>Sign in to save and hear your recordings on any device.</span><br>
@@ -68,15 +76,15 @@
   </section>
   <div class="layout">
     <nav id="page-nav" class="page-nav" aria-label="Pages" lang="en"></nav>
-    <div>
-      <section class="audio-tools" lang="en" aria-label="Recording for all pages">
-        <strong id="recording-label">One recording for all pages</strong><br>
-        <button id="record" disabled>Record</button><button id="stop" disabled>Stop</button>
-        <button id="save" disabled>Save recording</button><button id="discard" disabled>Discard take</button>
-        <audio id="player" controls hidden></audio>
-        <p id="status" role="status" aria-live="polite">Connecting to recordings…</p>
-      </section>
+    <div class="center-frame">
       <main id="pages"></main>
+      <aside class="recording-side" lang="en" aria-label="Recording">
+        <button id="record" disabled aria-pressed="false">Record</button>
+        <button id="replay" hidden>Play</button>
+        <button id="retry" hidden>Retry save</button>
+        <p id="status" class="quiet" role="status" aria-live="polite">Connecting to recordings…</p>
+      </aside>
+      <audio id="player" hidden></audio>
     </div>
   </div>
   <script>

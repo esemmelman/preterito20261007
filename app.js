@@ -5,18 +5,26 @@ let current = 0, client, user, recorder, stream, take, preview, busy = false, ge
 let recording = null;
 const recordingKey = 'all-pages';
 const bucket = 'spanish-page-recordings';
-const status = message => { el('status').textContent = message; };
+const status = (message, visible = false) => { el('status').textContent = message; el('status').classList.toggle('quiet', !visible); };
+function alignRecorder() {
+  const heading = sheets[current].querySelector('h1');
+  const frame = document.querySelector('.center-frame');
+  frame.style.setProperty('--recording-top', `${heading.getBoundingClientRect().top - frame.getBoundingClientRect().top}px`);
+}
+new ResizeObserver(alignRecorder).observe(el('pages'));
+window.addEventListener('resize', alignRecorder);
 function controls() {
   const active = Boolean(recorder && recorder.state !== 'inactive');
-  el('record').disabled = !user || busy || active || Boolean(take);
-  el('stop').disabled = !active || busy;
-  el('save').disabled = !take || busy || !user;
-  el('discard').disabled = !take || busy;
+  el('record').disabled = !user || busy || Boolean(take);
+  el('record').textContent = active ? 'Stop' : 'Record';
+  el('record').setAttribute('aria-pressed', String(active));
+  el('retry').hidden = !take || busy;
+  el('retry').disabled = busy || !user;
   document.querySelectorAll('#page-nav button').forEach(b => { b.disabled = busy || active || Boolean(take); });
   el('signout').disabled = busy || active || Boolean(take);
 }
 function clearPlayer() {
-  el('player').pause(); el('player').removeAttribute('src'); el('player').load(); el('player').hidden = true;
+  el('player').pause(); el('player').removeAttribute('src'); el('player').load(); el('replay').hidden = true;
   if (preview) URL.revokeObjectURL(preview);
   preview = null;
 }
@@ -31,13 +39,13 @@ async function loadAudio(auto = false) {
     const { data, error } = await client.storage.from(bucket).createSignedUrl(row.object_path, 3600);
     if (error) throw error;
     if (ticket !== generation) return;
-    el('player').src = data.signedUrl; el('player').hidden = false;
+    el('player').src = data.signedUrl;
     status('Recording ready.');
     if (auto) {
       try { await el('player').play(); }
-      catch { if (ticket === generation) status('Tap Play to hear your recording.'); }
+      catch { if (ticket === generation) { el('replay').hidden = false; status('Tap Play to hear your recording.', true); } }
     }
-  } catch (error) { if (ticket === generation) status(`Could not load recording: ${error.message}`); }
+  } catch (error) { if (ticket === generation) status(`Could not load recording: ${error.message}`, true); }
 }
 window.selectPage = index => {
   if (busy || take || (recorder && recorder.state !== 'inactive')) return;
@@ -46,7 +54,7 @@ window.selectPage = index => {
   [...el('page-nav').children].forEach((b, i) => {
     if (i === index) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   });
-  el('recording-label').textContent = 'One recording for all pages';
+  alignRecorder();
   loadAudio(true);
 };
 async function refreshSession(session) {
@@ -54,11 +62,11 @@ async function refreshSession(session) {
   el('login-form').hidden = Boolean(user); el('signed-in').hidden = !user; el('signout').hidden = !user;
   el('signed-in').textContent = user ? `Signed in as ${user.email}` : '';
   controls();
-  if (!user) { status('Sign in to record and load your saved recordings.'); return; }
+  if (!user) { status('Sign in to record and load your saved recordings.', true); return; }
   const id = user.id;
   const { data, error } = await client.from('spanish_recordings').select('page_key,object_path').eq('user_id', id).eq('lesson_id', 'preterite-v1').eq('page_key', recordingKey);
   if (user?.id !== id) return;
-  if (error) { status(`Could not load saved recordings: ${error.message}`); return; }
+  if (error) { status(`Could not load saved recordings: ${error.message}`, true); return; }
   recording = data[0] || null;
   await loadAudio(true);
 }
@@ -71,16 +79,17 @@ async function authenticate(signup) {
     const { data, error } = signup ? await client.auth.signUp(credentials) : await client.auth.signInWithPassword(credentials);
     if (error) throw error;
     el('password').value = '';
-    if (signup && !data.session) status('Check your email to confirm your account, then sign in.');
-  } catch (error) { status(error.message); }
+    if (signup && !data.session) status('Check your email to confirm your account, then sign in.', true);
+  } catch (error) { status(error.message, true); }
   finally { busy = false; controls(); }
 }
 el('login-form').addEventListener('submit', e => { e.preventDefault(); authenticate(false); });
 el('signup').onclick = () => authenticate(true);
 el('signout').onclick = async () => {
-  const { error } = await client.auth.signOut(); if (error) status(error.message);
+  const { error } = await client.auth.signOut(); if (error) status(error.message, true);
 };
 el('record').onclick = async () => {
+  if (recorder?.state === 'recording') { busy = true; recorder.stop(); controls(); return; }
   busy = true; controls(); ++generation; clearPlayer();
   try {
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) throw new Error('Recording requires HTTPS or localhost and a browser with microphone recording support.');
@@ -92,21 +101,21 @@ el('record').onclick = async () => {
     recorder.onstop = () => {
       stream.getTracks().forEach(track => track.stop());
       take = new Blob(chunks, { type: recorder.mimeType || chunks[0]?.type || 'audio/webm' });
-      if (!take.size) { take = null; status('No audio captured. Try again.'); controls(); return; }
-      preview = URL.createObjectURL(take); el('player').src = preview; el('player').hidden = false;
-      status('Listen to your take, then Save recording or Discard take.'); controls();
+      if (!take.size) { take = null; busy = false; status('No audio captured. Try again.', true); controls(); return; }
+      preview = URL.createObjectURL(take); el('player').src = preview;
+      el('player').play().catch(() => { el('replay').hidden = false; status('Tap Play to hear your recording.', true); });
+      busy = false;
+      saveRecording();
     };
     recorder.onerror = () => {
-      stream.getTracks().forEach(track => track.stop()); status('Recording failed. Try again.');
+      stream.getTracks().forEach(track => track.stop()); busy = false; status('Recording failed. Try again.', true);
       recorder.onstop = () => {}; recorder = null; controls();
     };
     recorder.start(); status('Recording… Speak now, then select Stop.');
-  } catch (error) { stream?.getTracks().forEach(track => track.stop()); status(error.message); }
+  } catch (error) { stream?.getTracks().forEach(track => track.stop()); status(error.message, true); }
   finally { busy = false; controls(); }
 };
-el('stop').onclick = () => { recorder.stop(); controls(); };
-el('discard').onclick = () => { take = null; clearPlayer(); controls(); loadAudio(); };
-el('save').onclick = async () => {
+async function saveRecording() {
   if (!take || !user) return;
   busy = true; controls(); status('Saving recording to Supabase…');
   const pageKey = recordingKey;
@@ -123,13 +132,15 @@ el('save').onclick = async () => {
     if (saved.error) throw saved.error;
     recording = row; take = null;
     if (old) await client.storage.from(bucket).remove([old.object_path]);
-    await loadAudio(); status('Saved. This recording plays for every page and is available on your other devices.');
+    status('Saved. This recording plays for every page and is available on your other devices.');
   } catch (error) {
     if (uploaded) await client.storage.from(bucket).remove([path]);
-    status(`Save failed; your take is still available to retry. ${error.message}`);
+    status(`Save failed. Select Retry save. ${error.message}`, true);
   } finally { busy = false; controls(); }
-};
-el('player').addEventListener('error', () => status('This audio could not play. Try a current browser or record a new take on this device.'));
+}
+el('retry').onclick = saveRecording;
+el('replay').onclick = () => { el('player').play().then(() => { el('replay').hidden = true; status('Playing recording.'); }).catch(error => status(error.message, true)); };
+el('player').addEventListener('error', () => status('This audio could not play. Try a current browser or record a new take on this device.', true));
 window.addEventListener('beforeunload', event => {
   stream?.getTracks().forEach(track => track.stop());
   if (take || busy || recorder?.state === 'recording') { event.preventDefault(); event.returnValue = ''; }
