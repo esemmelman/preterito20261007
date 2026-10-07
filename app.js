@@ -20,7 +20,7 @@ function controls() {
   document.querySelectorAll('#page-nav button').forEach(b => { b.disabled = busy || active; });
 }
 function showPage(visible) {
-  el('pages').style.visibility = visible ? 'visible' : 'hidden';
+  el('pages').classList.toggle('recording-blank', !visible);
   el('pages').setAttribute('aria-hidden', String(!visible));
 }
 function clearPlayer() {
