@@ -3,6 +3,76 @@ const sheets = window.lessonSheets;
 let current = 0, recorder, stream, preview, busy = false, playbackTimer, stoppedAt;
 const originalRecording = new URL('opening-recording.webm', window.location.href).href;
 let openingRecording = originalRecording, client, openingLoad = 0;
+const silenceLimit = 10000, soundThreshold = 0.008;
+let audioContext, inputSource, inputMonitor, outputMonitor, outputGeneration = 0;
+const playbackLevels = new Map();
+function stopInputMonitor() {
+  clearInterval(inputMonitor);
+  inputSource?.disconnect(); inputSource = null;
+}
+function stopOutputMonitor() {
+  ++outputGeneration;
+  clearInterval(outputMonitor);
+}
+function stopRecording(automatic = false) {
+  if (recorder?.state !== 'recording') return;
+  stopInputMonitor();
+  stoppedAt = performance.now(); showPage(true); busy = true;
+  recorder.stop(); controls();
+  status(automatic ? 'Recording stopped after ten seconds of silence. Playback starts in one second.' : 'The page is back. Playback starts in one second.');
+}
+function monitorInput() {
+  const analyser = audioContext.createAnalyser();
+  analyser.fftSize = 2048;
+  inputSource = audioContext.createMediaStreamSource(stream);
+  inputSource.connect(analyser);
+  const samples = new Float32Array(analyser.fftSize);
+  let lastSound = performance.now();
+  inputMonitor = setInterval(() => {
+    analyser.getFloatTimeDomainData(samples);
+    const rms = Math.sqrt(samples.reduce((sum, value) => sum + value * value, 0) / samples.length);
+    if (rms >= soundThreshold) lastSound = performance.now();
+    else if (performance.now() - lastSound >= silenceLimit) stopRecording(true);
+  }, 100);
+}
+async function monitorPlayback(source) {
+  stopOutputMonitor();
+  const ticket = outputGeneration;
+  let lastSound = performance.now(), previousTime = el('player').currentTime;
+  let levels;
+  // Decode without routing the player through AudioContext, preserving normal autoplay.
+  if (!playbackLevels.has(source)) {
+    const decoded = (async () => {
+      const response = await fetch(source);
+      if (!response.ok) throw new Error('Audio unavailable');
+      const context = new OfflineAudioContext(1, 1, 44100);
+      const buffer = await context.decodeAudioData(await response.arrayBuffer());
+      const step = Math.max(1, Math.round(buffer.sampleRate / 10));
+      const result = new Float32Array(Math.ceil(buffer.length / step));
+      for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+        const data = buffer.getChannelData(channel);
+        for (let i = 0; i < data.length; i++) result[Math.floor(i / step)] += data[i] * data[i] / step;
+      }
+      return { values: result, rate: buffer.sampleRate / step };
+    })();
+    playbackLevels.set(source, decoded);
+  }
+  playbackLevels.get(source).then(result => { levels = result; }).catch(() => {});
+  outputMonitor = setInterval(() => {
+    if (ticket !== outputGeneration || el('player').paused || el('player').ended) { clearInterval(outputMonitor); return; }
+    const player = el('player'), now = performance.now();
+    const advancing = player.currentTime > previousTime;
+    const energy = levels?.values[Math.floor(player.currentTime * levels.rate)] || 0;
+    if (advancing && !player.muted && player.volume > 0 && (!levels || energy >= soundThreshold * soundThreshold)) lastSound = now;
+    previousTime = player.currentTime;
+    if (now - lastSound >= silenceLimit) {
+      player.pause(); player.currentTime = 0;
+      el('replay').hidden = false;
+      status('Playback stopped after ten seconds of silence.', true);
+      stopOutputMonitor();
+    }
+  }, 100);
+}
 const status = (message, visible = false) => {
   el('status').textContent = message;
   el('status').classList.toggle('quiet', !visible);
@@ -26,18 +96,21 @@ function showPage(visible) {
   el('pages').setAttribute('aria-hidden', String(!visible));
 }
 function clearPlayer() {
+  stopOutputMonitor();
   clearTimeout(playbackTimer);
   el('player').pause(); el('player').removeAttribute('src'); el('player').load();
   el('replay').hidden = true;
-  if (preview) URL.revokeObjectURL(preview);
+  if (preview) { playbackLevels.delete(preview); URL.revokeObjectURL(preview); }
   preview = null;
 }
 async function playRecording(source = preview) {
   if (!source) return;
+  stopOutputMonitor();
   if (el('player').src !== source) el('player').src = source;
   el('player').currentTime = 0;
   try {
     await el('player').play();
+    monitorPlayback(source);
     el('replay').hidden = true;
     status('Playing recording.');
   } catch {
@@ -57,16 +130,13 @@ window.selectPage = index => {
 };
 el('record').onclick = async () => {
   if (recorder?.state === 'recording') {
-    stoppedAt = performance.now();
-    showPage(true);
-    busy = true;
-    recorder.stop();
-    controls();
-    status('The page is back. Playback starts in one second.');
+    stopRecording();
     return;
   }
   busy = true; clearPlayer(); showPage(false); controls();
   try {
+    audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+    audioContext.resume().catch(() => {});
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
       throw new Error('Recording requires HTTPS or localhost and a browser with microphone recording support.');
     }
@@ -76,6 +146,7 @@ el('record').onclick = async () => {
     const chunks = [];
     recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
     recorder.onstop = () => {
+      stopInputMonitor();
       stream.getTracks().forEach(track => track.stop());
       const take = new Blob(chunks, { type: recorder.mimeType || chunks[0]?.type || 'audio/webm' });
       if (!take.size) {
@@ -88,21 +159,26 @@ el('record').onclick = async () => {
       }, Math.max(0, 1000 - (performance.now() - stoppedAt)));
     };
     recorder.onerror = () => {
+      stopInputMonitor();
       recorder.onstop = () => {};
       stream.getTracks().forEach(track => track.stop());
       recorder = null; busy = false; showPage(true);
       status('Recording failed. Try again.', true); controls();
     };
-    recorder.start(); status('Recording… Speak now, then select Stop.');
+    recorder.start(); monitorInput(); status('Recording… Speak now, then select Stop.');
   } catch (error) {
+    stopInputMonitor();
     stream?.getTracks().forEach(track => track.stop());
     showPage(true); status(error.message, true);
   } finally { busy = false; controls(); }
 };
 el('replay').onclick = () => playRecording(el('player').src);
 el('player').addEventListener('error', () => status('This audio could not play. Try recording a new take.', true));
+el('player').addEventListener('pause', stopOutputMonitor);
+el('player').addEventListener('ended', stopOutputMonitor);
 window.addEventListener('pagehide', () => {
   clearTimeout(playbackTimer);
+  stopInputMonitor(); stopOutputMonitor();
   stream?.getTracks().forEach(track => track.stop());
 });
 window.selectPage(0);

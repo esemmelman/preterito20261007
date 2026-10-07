@@ -6,7 +6,7 @@ The plural second-person forms use **ustedes**, which takes the same conjugation
 
 ## Speaking practice
 
-Use the Record button to the right of the center page, aligned with its first infinitive. The center page goes blank while you speak and the button changes to Stop. Select Stop to restore the page immediately. After one second, your recording plays. If your browser blocks automatic sound, a Play button appears.
+Use the Record button to the right of the center page, aligned with its first infinitive. The center page goes blank while you speak and the button changes to Stop. After ten seconds without microphone sound, recording stops automatically. You can also select Stop to restore the page immediately. After one second, your recording plays. Playback stops after ten seconds of continuous silence or stalled audio. If your browser blocks automatic sound, a Play button appears.
 
 The first original recording is preserved as `opening-recording.webm` (12.42 seconds). It was recovered from the browser cache and verified against the original upload checksum. It plays when the app opens and when a page is selected, without sign-in. Browser autoplay restrictions may require tapping Play. An existing signed-in Supabase session also preserves a separate cloud copy under the `opening-example` key.
 
