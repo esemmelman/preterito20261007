@@ -16,10 +16,29 @@
     h1 { font-size: inherit; margin: 0 0 64px; line-height: 1.2; }
     .forms { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px 24px; font-size: inherit; line-height: 1.2; }
     .forms > div { overflow-wrap: anywhere; }
+    :root { --reading-size: 44pt; }
+    [hidden] { display: none !important; }
+    .layout { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 20px; align-items: start; }
+    .page-nav { position: sticky; top: 0; max-height: 100vh; overflow-y: auto; background: #fff; padding: 12px; border-right: 2px solid #999; }
+    .page-nav button { display: block; width: 100%; text-align: left; font-size: var(--reading-size); font-weight: 700; margin-bottom: 8px; }
+    .page-nav button[aria-current="page"] { background: #173d65; color: white; }
+    .sheet { max-width: 100%; }
+    .page-number { text-align: right; font-size: var(--reading-size); font-weight: 700; margin-bottom: 20px; }
+    .audio-tools, .account { font-size: 22px; padding: 16px; background: white; margin: 12px; }
+    .audio-tools button, .account button { font-size: 22px; margin: 4px; }
+    input { font: inherit; padding: 8px; max-width: 100%; }
+    label { display: inline-block; margin: 8px; }
+    audio { display: block; width: 100%; margin-top: 12px; }
+    #status { min-height: 1.4em; }
+    @media screen and (max-width: 1100px) { :root { --reading-size: 42px; } .verb { font-size: var(--reading-size); } .sheet { width: 100%; } }
+    @media screen and (max-width: 650px) { :root { --reading-size: 32px; } .layout { gap: 6px; grid-template-columns: 140px minmax(0, 1fr); } .page-nav { padding: 4px; } .page-nav button { padding: 8px 4px; } .sheet { padding: 12px; } .verb { font-size: var(--reading-size); } .forms { gap: 16px 8px; } h1 { margin-bottom: 32px; } }
     @page { size: letter; margin: .5in; }
     @media print {
       body { background: white; }
-      .toolbar { display: none; }
+      .toolbar, .page-nav, .audio-tools, .account { display: none; }
+      .layout { display: block; }
+      .sheet[hidden] { display: block !important; }
+      .page-number { font-size: 16pt; margin-bottom: 8px; }
       .sheet { width: auto; min-height: 0; height: 10in; margin: 0; padding: .2in; break-after: page; }
       .sheet:last-child { break-after: auto; }
       .verb { break-inside: avoid; }
@@ -27,17 +46,41 @@
     @media screen and (max-width: 750px) {
       .sheet { width: calc(100% - 24px); min-height: 0; padding: 24px; }
       .verb { height: auto; padding-bottom: 36px; }
-      .verb, .toolbar { font-size: 42px; }
+      .toolbar { font-size: 42px; }
     }
-    .sheet.measure { position: absolute; left: -10000px; visibility: hidden; width: 7.5in; min-height: 0; height: auto; margin: 0; padding: .2in; }
+    .sheet.measure { position: absolute; left: -10000px; visibility: hidden; width: 7.5in; max-width: none; min-height: 0; height: auto; margin: 0; padding: .2in; }
+    .measure h1 { margin-bottom: 64px; }
+    .measure .forms { gap: 28px 24px; }
     .measure .verb { font-size: 44pt; padding: .15in 0; }
     .measure .verb + .verb { padding-top: .35in; }
   </style>
 </head>
 <body>
-  <div class="toolbar"><button onclick="window.print()">Print conjugations</button><p class="version" lang="en">Version 1.6</p></div>
-  <main id="pages"></main>
+  <div class="toolbar"><button onclick="window.print()">Print conjugations</button><p class="version" lang="en">Version 2.1</p></div>
+  <section class="account" lang="en">
+    <form id="login-form">
+      <span>Sign in to save and hear your recordings on any device.</span><br>
+      <label>Email <input id="email" type="email" autocomplete="username" required></label>
+      <label>Password <input id="password" type="password" autocomplete="current-password" minlength="8" required></label>
+      <button type="submit">Sign in</button><button type="button" id="signup">Create account</button>
+    </form>
+    <p id="signed-in" hidden></p><button id="signout" hidden>Sign out</button>
+  </section>
+  <div class="layout">
+    <nav id="page-nav" class="page-nav" aria-label="Pages" lang="en"></nav>
+    <div>
+      <section class="audio-tools" lang="en" aria-label="Recording for all pages">
+        <strong id="recording-label">One recording for all pages</strong><br>
+        <button id="record" disabled>Record</button><button id="stop" disabled>Stop</button>
+        <button id="save" disabled>Save recording</button><button id="discard" disabled>Discard take</button>
+        <audio id="player" controls hidden></audio>
+        <p id="status" role="status" aria-live="polite">Connecting to recordings…</p>
+      </section>
+      <main id="pages"></main>
+    </div>
+  </div>
   <script>
+  (() => {
     // Rows pair singular and plural forms in conventional conjugation-table order.
     const verbs = [
       ['viajar', 'to travel', ['viajé', 'viajamos', 'viajaste', 'viajasteis', 'viajó', 'viajaron']],
@@ -93,7 +136,7 @@
       measure.append(cards[i++]);
       if (i < cards.length) {
         measure.append(cards[i]);
-        if (measure.getBoundingClientRect().height <= 10 * 96 - 2) {
+        if (measure.getBoundingClientRect().height <= 10 * 96 - 34) {
           i++;
         } else {
           cards[i].remove();
@@ -103,6 +146,24 @@
       pages.append(sheet);
     }
     measure.remove();
+    const sheets = [...pages.children];
+    sheets.forEach((sheet, index) => {
+      // Recordings follow verb groups, so resizing a device never changes their identity.
+      sheet.dataset.pageKey = [...sheet.querySelectorAll('h1')].map(h => h.firstChild.textContent.trim().replace(/ -$/, '')).join('_');
+      const number = document.createElement('div');
+      number.className = 'page-number'; number.lang = 'en'; number.textContent = `Page ${index + 1}`;
+      sheet.prepend(number);
+      const button = document.createElement('button');
+      button.textContent = `Page ${index + 1}`;
+      button.addEventListener('click', () => window.selectPage(index));
+      document.getElementById('page-nav').append(button);
+      sheet.hidden = index !== 0;
+    });
+    window.lessonSheets = sheets;
+  })();
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
