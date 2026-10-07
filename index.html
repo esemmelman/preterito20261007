@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spanish Preterite — Large Print</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #eee; color: #111; font-family: Arial, Helvetica, sans-serif; }
+    .toolbar { padding: 20px; text-align: center; font-size: 18px; }
+    button { padding: 12px 24px; font: inherit; cursor: pointer; }
+    .sheet { background: white; width: 7.5in; min-height: 10in; margin: 20px auto; padding: .35in; }
+    .verb { height: 4.5in; padding: .15in 0; }
+    .verb + .verb { border-top: 2px solid #999; padding-top: .35in; }
+    h1 { font-size: 38pt; margin: 0 0 8px; }
+    .meaning { font-size: 25pt; margin: 0 0 24px; }
+    .forms { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 12px; font-size: 30pt; line-height: 1.2; }
+    @page { size: letter; margin: .5in; }
+    @media print {
+      body { background: white; }
+      .toolbar { display: none; }
+      .sheet { width: auto; min-height: 0; height: 10in; margin: 0; padding: .2in; break-after: page; }
+      .sheet:last-child { break-after: auto; }
+      .verb { break-inside: avoid; }
+    }
+    @media screen and (max-width: 750px) {
+      .sheet { width: calc(100% - 24px); min-height: 0; padding: 24px; }
+      .verb { height: auto; padding-bottom: 36px; }
+      h1 { font-size: 36px; }
+      .meaning { font-size: 26px; }
+      .forms { font-size: clamp(21px, 5vw, 36px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar"><button onclick="window.print()">Print conjugations</button></div>
+  <main id="pages"></main>
+  <script>
+    // Rows pair singular and plural forms in conventional conjugation-table order.
+    const verbs = [
+      ['viajar', 'to travel', ['viajé', 'viajamos', 'viajaste', 'viajasteis', 'viajó', 'viajaron']],
+      ['decir', 'to say; to tell', ['dije', 'dijimos', 'dijiste', 'dijisteis', 'dijo', 'dijeron']],
+      ['venir', 'to come', ['vine', 'vinimos', 'viniste', 'vinisteis', 'vino', 'vinieron']],
+      ['tener', 'to have', ['tuve', 'tuvimos', 'tuviste', 'tuvisteis', 'tuvo', 'tuvieron']],
+      ['poder', 'to be able to; can', ['pude', 'pudimos', 'pudiste', 'pudisteis', 'pudo', 'pudieron']],
+      ['ir', 'to go', ['fui', 'fuimos', 'fuiste', 'fuisteis', 'fue', 'fueron']],
+      ['andar', 'to walk', ['anduve', 'anduvimos', 'anduviste', 'anduvisteis', 'anduvo', 'anduvieron']],
+      ['hacer', 'to do; to make', ['hice', 'hicimos', 'hiciste', 'hicisteis', 'hizo', 'hicieron']],
+      ['ver', 'to see', ['vi', 'vimos', 'viste', 'visteis', 'vio', 'vieron']],
+      ['dar', 'to give', ['di', 'dimos', 'diste', 'disteis', 'dio', 'dieron']],
+      ['divertirse', 'to have fun', ['me divertí', 'nos divertimos', 'te divertiste', 'os divertisteis', 'se divirtió', 'se divirtieron']],
+      ['dormir', 'to sleep', ['dormí', 'dormimos', 'dormiste', 'dormisteis', 'durmió', 'durmieron']],
+      ['vestirse', 'to get dressed', ['me vestí', 'nos vestimos', 'te vestiste', 'os vestisteis', 'se vistió', 'se vistieron']],
+      ['oír', 'to hear', ['oí', 'oímos', 'oíste', 'oísteis', 'oyó', 'oyeron']],
+      ['destruir', 'to destroy', ['destruí', 'destruimos', 'destruiste', 'destruisteis', 'destruyó', 'destruyeron']],
+      ['cruzar', 'to cross', ['crucé', 'cruzamos', 'cruzaste', 'cruzasteis', 'cruzó', 'cruzaron']],
+      ['jugar', 'to play', ['jugué', 'jugamos', 'jugaste', 'jugasteis', 'jugó', 'jugaron']],
+      ['sacar', 'to take out; to take (photos)', ['saqué', 'sacamos', 'sacaste', 'sacasteis', 'sacó', 'sacaron']],
+      ['escalar', 'to climb', ['escalé', 'escalamos', 'escalaste', 'escalasteis', 'escaló', 'escalaron']],
+      ['suceder', 'to happen', ['sucedí', 'sucedimos', 'sucediste', 'sucedisteis', 'sucedió', 'sucedieron']]
+    ];
+    const pages = document.getElementById('pages');
+    for (let i = 0; i < verbs.length; i += 2) {
+      const sheet = document.createElement('section');
+      sheet.className = 'sheet';
+      for (const [infinitive, meaning, forms] of verbs.slice(i, i + 2)) {
+        const card = document.createElement('article');
+        card.className = 'verb';
+        const heading = document.createElement('h1');
+        heading.textContent = infinitive;
+        const definition = document.createElement('p');
+        definition.className = 'meaning';
+        definition.lang = 'en';
+        definition.textContent = meaning;
+        const grid = document.createElement('div');
+        grid.className = 'forms';
+        for (const form of forms) {
+          const cell = document.createElement('div');
+          cell.textContent = form;
+          grid.append(cell);
+        }
+        card.append(heading, definition, grid);
+        sheet.append(card);
+      }
+      pages.append(sheet);
+    }
+  </script>
+</body>
+</html>
