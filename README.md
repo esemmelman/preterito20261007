@@ -6,11 +6,11 @@ The plural second-person forms use **ustedes**, which takes the same conjugation
 
 ## Speaking practice
 
-Use the Record button to the right of the center page, aligned with its first infinitive. The center page goes blank while you speak and the button changes to Stop. Select Stop to restore the page immediately. After two seconds, your recording plays. If your browser blocks automatic sound, a Play button appears.
+Use the Record button to the right of the center page, aligned with its first infinitive. The center page goes blank while you speak and the button changes to Stop. Select Stop to restore the page immediately. After one second, your recording plays. If your browser blocks automatic sound, a Play button appears.
 
 The first original recording is preserved as `opening-recording.webm` (12.42 seconds). It was recovered from the browser cache and verified against the original upload checksum. It plays when the app opens and when a page is selected, without sign-in. Browser autoplay restrictions may require tapping Play. An existing signed-in Supabase session also preserves a separate cloud copy under the `opening-example` key.
 
-Practice takes remain separate from that opening recording. They play two seconds after Stop and stay only in this browser session. They are not uploaded or saved, and recording practice requires no sign-in.
+Practice takes remain separate from that opening recording. They play one second after Stop and stay only in this browser session. They are not uploaded or saved, and recording practice requires no sign-in.
 
 Serve over HTTPS or localhost to allow microphone access. For local development, run `python -m http.server 8765` and open http://localhost:8765.
 

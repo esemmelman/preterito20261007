@@ -62,7 +62,7 @@ el('record').onclick = async () => {
     busy = true;
     recorder.stop();
     controls();
-    status('The page is back. Playback starts in two seconds.');
+    status('The page is back. Playback starts in one second.');
     return;
   }
   busy = true; clearPlayer(); showPage(false); controls();
@@ -85,7 +85,7 @@ el('record').onclick = async () => {
       el('player').src = preview;
       playbackTimer = setTimeout(() => {
         busy = false; controls(); playRecording();
-      }, Math.max(0, 2000 - (performance.now() - stoppedAt)));
+      }, Math.max(0, 1000 - (performance.now() - stoppedAt)));
     };
     recorder.onerror = () => {
       recorder.onstop = () => {};
