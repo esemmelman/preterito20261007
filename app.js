@@ -1,7 +1,8 @@
 const el = id => document.getElementById(id);
 const sheets = window.lessonSheets;
 let current = 0, recorder, stream, preview, busy = false, playbackTimer, stoppedAt;
-let openingRecording, client, openingLoad = 0;
+const originalRecording = new URL('opening-recording.webm', window.location.href).href;
+let openingRecording = originalRecording, client, openingLoad = 0;
 const status = (message, visible = false) => {
   el('status').textContent = message;
   el('status').classList.toggle('quiet', !visible);
@@ -110,22 +111,34 @@ controls();
 // Keep the saved opening/example recording separate from temporary practice takes.
 async function loadOpeningRecording(session) {
   const ticket = ++openingLoad;
-  openingRecording = null;
-  el('opening-login').hidden = Boolean(session);
+  openingRecording = originalRecording;
   if (!session) return;
   try {
-    const { data, error } = await client.from('spanish_recordings')
+    let { data, error } = await client.from('spanish_recordings')
       .select('object_path').eq('user_id', session.user.id)
-      .eq('lesson_id', 'preterite-v1').eq('page_key', 'all-pages').maybeSingle();
+      .eq('lesson_id', 'preterite-v1').eq('page_key', 'opening-example').maybeSingle();
     if (error) throw error;
-    if (!data || ticket !== openingLoad) return;
+    if (ticket !== openingLoad) return;
+    if (!data) {
+      // Preserve the recovered first take separately; practice never overwrites it.
+      const response = await fetch(originalRecording);
+      if (!response.ok) throw new Error('The original recording could not be loaded.');
+      const path = `${session.user.id}/preterite-v1/opening-example/${crypto.randomUUID()}.webm`;
+      const upload = await client.storage.from('spanish-page-recordings').upload(path, await response.blob(), { contentType: 'audio/webm', upsert: false });
+      if (upload.error) throw upload.error;
+      const saved = await client.from('spanish_recordings').upsert({
+        user_id: session.user.id, lesson_id: 'preterite-v1', page_key: 'opening-example', object_path: path
+      }, { onConflict: 'user_id,lesson_id,page_key' });
+      if (saved.error) throw saved.error;
+      data = { object_path: path };
+    }
     const signed = await client.storage.from('spanish-page-recordings').createSignedUrl(data.object_path, 3600);
     if (signed.error) throw signed.error;
     if (ticket !== openingLoad) return;
     openingRecording = signed.data.signedUrl;
-    if (!busy && recorder?.state !== 'recording' && !preview) playRecording(openingRecording);
+    // The bundled original already started on arrival; use the cloud copy on future selections.
   } catch (error) {
-    status(`Could not load opening recording: ${error.message}`, true);
+    openingRecording = originalRecording;
   }
 }
 if (window.supabase && window.SPANISH_CONFIG?.url) {
@@ -136,12 +149,3 @@ if (window.supabase && window.SPANISH_CONFIG?.url) {
     }
   });
 }
-el('opening-login-form').onsubmit = async event => {
-  event.preventDefault();
-  if (!client) return;
-  const { error } = await client.auth.signInWithPassword({
-    email: el('email').value.trim(), password: el('password').value
-  });
-  if (error) status(error.message, true);
-  else el('password').value = '';
-};
