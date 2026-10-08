@@ -78,9 +78,10 @@ const status = (message, visible = false) => {
   el('status').classList.toggle('quiet', !visible);
 };
 function alignRecorder() {
-  const heading = sheets[current].querySelector('h1');
+  const number = sheets[current].querySelector('.page-number').getBoundingClientRect();
   const frame = document.querySelector('.center-frame');
-  frame.style.setProperty('--recording-top', `${heading.getBoundingClientRect().top - frame.getBoundingClientRect().top}px`);
+  const buttonHeight = el('record').getBoundingClientRect().height;
+  frame.style.setProperty('--recording-top', `${number.top + (number.height - buttonHeight) / 2 - frame.getBoundingClientRect().top}px`);
 }
 new ResizeObserver(alignRecorder).observe(el('pages'));
 window.addEventListener('resize', alignRecorder);

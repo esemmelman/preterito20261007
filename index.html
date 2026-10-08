@@ -65,15 +65,10 @@
       .verb { height: auto; padding-bottom: 36px; }
       .toolbar { font-size: 42px; }
     }
-    .sheet.measure { position: absolute; left: -10000px; visibility: hidden; width: 7.5in; max-width: none; min-height: 0; height: auto; margin: 0; padding: .2in; }
-    .measure h1 { margin-bottom: 64px; }
-    .measure .forms { gap: 28px 24px; }
-    .measure .verb { font-size: 44pt; padding: .15in 0; }
-    .measure .verb + .verb { padding-top: .35in; }
   </style>
 </head>
 <body>
-  <div class="toolbar"><button onclick="window.print()">Print conjugations</button><p class="version" lang="en">Version 2.8</p></div>
+  <div class="toolbar"><button onclick="window.print()">Print conjugations</button><p class="version" lang="en">Version 2.9</p></div>
   <div class="layout">
     <nav id="page-nav" class="page-nav" aria-label="Pages" lang="en"></nav>
     <div class="center-frame">
@@ -134,27 +129,13 @@
         card.append(heading, grid);
         cards.push(card);
     }
-    // Measure at the actual print width and keep at most two verbs per sheet.
-    const measure = document.createElement('section');
-    measure.className = 'sheet measure';
-    measure.setAttribute('aria-hidden', 'true');
-    document.body.append(measure);
-    for (let i = 0; i < cards.length;) {
+    // Each infinitive and its conjugations get their own screen and print page.
+    for (const card of cards) {
       const sheet = document.createElement('section');
       sheet.className = 'sheet';
-      measure.append(cards[i++]);
-      if (i < cards.length) {
-        measure.append(cards[i]);
-        if (measure.getBoundingClientRect().height <= 10 * 96 - 34) {
-          i++;
-        } else {
-          cards[i].remove();
-        }
-      }
-      sheet.append(...measure.children);
+      sheet.append(card);
       pages.append(sheet);
     }
-    measure.remove();
     const sheets = [...pages.children];
     sheets.forEach((sheet, index) => {
       // Recordings follow verb groups, so resizing a device never changes their identity.
@@ -173,6 +154,6 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
   <script src="config.js"></script>
-  <script src="app.js?v=2.8"></script>
+  <script src="app.js?v=2.9"></script>
 </body>
 </html>
