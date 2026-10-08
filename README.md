@@ -1,6 +1,6 @@
 # Spanish preterite — speaking and large print
 
-Select a Page button in the left frame to show one numbered page and play your saved opening recording. The page links use the same font size as the conjugations. Print conjugations prints every page in bold 44-point type on US Letter paper.
+Select a Page button in the left frame to show one numbered page and play your saved opening recording. The page links use the same font size as the conjugations. Use your browser's Print command to print every page in bold 44-point type on US Letter paper.
 
 The plural second-person forms use **ustedes**, which takes the same conjugation as the third-person plural, including reflexive pronouns.
 
