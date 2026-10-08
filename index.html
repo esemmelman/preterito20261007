@@ -18,12 +18,11 @@
     [hidden] { display: none !important; }
     .layout { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 20px; align-items: start; }
     .page-nav { position: sticky; top: 0; max-height: 100vh; overflow-y: auto; background: #fff; padding: 12px; border-right: 2px solid #999; }
-    .page-nav button { display: block; width: 100%; text-align: left; font-size: var(--reading-size); font-weight: 700; margin-bottom: 8px; }
+    .page-nav button { display: block; width: 100%; text-align: left; font-size: var(--reading-size); font-weight: 700; margin-bottom: 8px; overflow-wrap: anywhere; }
     .page-nav button[aria-current="page"] { background: #173d65; color: white; }
     .page-nav button:disabled { opacity: 1; color: #111; }
     .page-nav button[aria-current="page"]:disabled { color: white; }
     .sheet { max-width: 100%; }
-    .page-number { text-align: right; font-size: var(--reading-size); font-weight: 700; margin-bottom: 20px; }
     .account { font-size: 22px; padding: 16px; background: white; margin: 12px; }
     .account button { font-size: 22px; margin: 4px; }
     input { font: inherit; padding: 8px; max-width: 100%; }
@@ -53,7 +52,6 @@
       #pages { visibility: visible !important; }
       .layout { display: block; }
       .sheet[hidden] { display: block !important; }
-      .page-number { font-size: 16pt; margin-bottom: 8px; }
       .sheet { width: auto; min-height: 0; height: 10in; margin: 0; padding: .2in; break-after: page; }
       .sheet:last-child { break-after: auto; }
       .verb { break-inside: avoid; }
@@ -66,7 +64,7 @@
 </head>
 <body>
   <div class="layout">
-    <nav id="page-nav" class="page-nav" aria-label="Pages" lang="en"></nav>
+    <nav id="page-nav" class="page-nav" aria-label="Verbos"></nav>
     <div class="center-frame">
       <main id="pages"></main>
       <aside class="recording-side" lang="en" aria-label="Recording">
@@ -136,11 +134,8 @@
     sheets.forEach((sheet, index) => {
       // Recordings follow verb groups, so resizing a device never changes their identity.
       sheet.dataset.pageKey = [...sheet.querySelectorAll('h1')].map(h => h.firstChild.textContent.trim().replace(/ -$/, '')).join('_');
-      const number = document.createElement('div');
-      number.className = 'page-number'; number.lang = 'en'; number.textContent = `Page ${index + 1}`;
-      sheet.prepend(number);
       const button = document.createElement('button');
-      button.textContent = `Page ${index + 1}`;
+      button.textContent = sheet.dataset.pageKey;
       button.addEventListener('click', () => window.selectPage(index));
       document.getElementById('page-nav').append(button);
       sheet.hidden = index !== 0;
